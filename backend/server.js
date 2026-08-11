@@ -1,4 +1,9 @@
-require('dotenv').config({ quiet: true });
+require('dotenv').config();
+
+if (!process.env.JWT_SECRET) {
+  console.error('JWT_SECRET belum didefinisikan pada file .env.');
+  process.exit(1);
+}
 
 const app = require('./src/app');
 const connectDB = require('./src/config/db');
