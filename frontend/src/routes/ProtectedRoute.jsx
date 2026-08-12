@@ -6,7 +6,14 @@ function ProtectedRoute() {
   const { user, token, loading } = useAuth();
 
   if (loading) {
-    return <div className="screen-message">Memeriksa autentikasi...</div>;
+    return (
+      <div className="screen-message">
+        <div className="screen-message-card">
+          <div className="spinner" />
+          <p>Memeriksa autentikasi...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user || !token) {

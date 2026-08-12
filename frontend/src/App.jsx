@@ -12,7 +12,14 @@ import Register from './pages/Register';
 import ProtectedRoute from './routes/ProtectedRoute';
 
 function LoadingScreen() {
-  return <div className="screen-message">Memeriksa autentikasi...</div>;
+  return (
+    <div className="screen-message">
+      <div className="screen-message-card">
+        <div className="spinner" />
+        <p>Memeriksa autentikasi...</p>
+      </div>
+    </div>
+  );
 }
 
 function HomeRedirect() {

@@ -60,6 +60,8 @@ function BookForm({
   const handleChange = (event) => {
     const { name, value } = event.target;
 
+    event.currentTarget.setCustomValidity('');
+
     setForm((current) => ({
       ...current,
       [name]: value,
@@ -89,7 +91,7 @@ function BookForm({
   };
 
   return (
-    <form className="form-grid" onSubmit={handleSubmit}>
+    <form className="form-grid form-grid-two-column" onSubmit={handleSubmit}>
       {errorMessage ? (
         <div className="alert alert-error">
           <p>{errorMessage}</p>
@@ -103,7 +105,7 @@ function BookForm({
         </div>
       ) : null}
 
-      <label className="field" htmlFor={`book-title-${mode}`}>
+      <label className="field field-full" htmlFor={`book-title-${mode}`}>
         <span>Judul</span>
         <input
           id={`book-title-${mode}`}
@@ -179,7 +181,7 @@ function BookForm({
         />
       </label>
 
-      <div className="form-actions">
+      <div className="form-actions field-full">
         <button type="submit" className="button button-primary" disabled={submitting}>
           {submitting ? 'Menyimpan...' : 'Simpan'}
         </button>

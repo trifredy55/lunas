@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import AuthShell from '../components/AuthShell';
 import { useAuth } from '../context/AuthContext';
 
 function extractError(error) {
@@ -52,6 +53,8 @@ function Login() {
   const handleChange = (event) => {
     const { name, value } = event.target;
 
+    event.currentTarget.setCustomValidity('');
+
     setForm((current) => ({
       ...current,
       [name]: value,
@@ -84,86 +87,84 @@ function Login() {
   };
 
   return (
-    <div className="auth-shell">
-      <section className="auth-card">
-        <div className="auth-header">
-          <p className="eyebrow">LUNAS</p>
-          <h1>Masuk ke Sistem</h1>
-          <p className="auth-subtitle">Secure Digital Library Dashboard</p>
+    <AuthShell
+      title="Masuk ke Sistem"
+      subtitle="Silakan masuk untuk melanjutkan pengelolaan perpustakaan digital LUNAS."
+      footer={
+        <p className="auth-link-row">
+          Belum memiliki akun? <Link to="/register">Daftar</Link>
+        </p>
+      }
+    >
+      {successMessage ? <div className="alert alert-success">{successMessage}</div> : null}
+
+      {errorState.message ? (
+        <div className="alert alert-error">
+          <p>{errorState.message}</p>
+          {errorState.details.length > 0 ? (
+            <ul className="error-list">
+              {errorState.details.map((item, index) => (
+                <li key={`${item.field}-${index}`}>{item.message}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
+      ) : null}
 
-        {successMessage ? <div className="alert alert-success">{successMessage}</div> : null}
+      <form className="form-grid auth-form" onSubmit={handleSubmit}>
+        <label className="field">
+          <span>Email</span>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            onInvalid={handleInvalid}
+            onInput={clearCustomValidity}
+            placeholder="nama@unsia.ac.id"
+            autoComplete="email"
+            required
+          />
+        </label>
 
-        {errorState.message ? (
-          <div className="alert alert-error">
-            <p>{errorState.message}</p>
-            {errorState.details.length > 0 ? (
-              <ul className="error-list">
-                {errorState.details.map((item, index) => (
-                  <li key={`${item.field}-${index}`}>
-                    {item.field}: {item.message}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
-
-        <form className="form-grid" onSubmit={handleSubmit}>
-          <label className="field">
-            <span>Email</span>
+        <label className="field">
+          <span>Password</span>
+          <div className="password-wrapper">
             <input
-              type="email"
-              name="email"
-              value={form.email}
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={form.password}
               onChange={handleChange}
               onInvalid={handleInvalid}
               onInput={clearCustomValidity}
-              placeholder="nama@unsia.ac.id"
-              autoComplete="email"
+              placeholder="Masukkan password"
+              autoComplete="current-password"
               required
             />
-          </label>
+            <button
+              type="button"
+              className="password-toggle"
+              aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              aria-pressed={showPassword}
+              onClick={() => {
+                setShowPassword((previous) => !previous);
+              }}
+            >
+              {showPassword ? <FiEyeOff /> : <FiEye />}
+            </button>
+          </div>
+        </label>
 
-          <label className="field">
-            <span>Password</span>
-            <div className="password-wrapper">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                onInvalid={handleInvalid}
-                onInput={clearCustomValidity}
-                placeholder="Masukkan password"
-                autoComplete="current-password"
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                aria-pressed={showPassword}
-                onClick={() => {
-                  setShowPassword((previous) => !previous);
-                }}
-              >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
-          </label>
-
-          <button type="submit" className="button button-primary" disabled={submitting}>
-            {submitting ? 'Memproses...' : 'Login'}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          Belum memiliki akun? <Link to="/register">Daftar</Link>
-        </p>
-      </section>
-    </div>
+        <button
+          type="submit"
+          className="button button-primary button-block"
+          disabled={submitting}
+        >
+          {submitting ? 'Memproses...' : 'Login'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
 

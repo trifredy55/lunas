@@ -1,7 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
 
 import api from '../api/api';
+import AppModal from '../components/AppModal';
 import BookForm from '../components/BookForm';
+import PageHeader from '../components/PageHeader';
+import TablePagination from '../components/TablePagination';
+import TableToolbar from '../components/TableToolbar';
+import {
+  confirmAction,
+  showErrorDialog,
+  showSuccessToast,
+} from '../utils/alerts';
+import { normalizeText } from '../utils/formatters';
 
 const EMPTY_BOOK = {
   title: '',
@@ -22,16 +33,32 @@ function extractApiError(error, fallbackMessage) {
   };
 }
 
+function filterBooks(books, query) {
+  const normalizedQuery = normalizeText(query);
+
+  if (!normalizedQuery) {
+    return books;
+  }
+
+  return books.filter((book) =>
+    [book.title, book.author, book.category, book.isbn]
+      .map((value) => normalizeText(value))
+      .some((value) => value.includes(normalizedQuery))
+  );
+}
+
 function Books() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [formErrors, setFormErrors] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadBooks = async () => {
     setLoading(true);
@@ -43,11 +70,10 @@ function Books() {
 
       setBooks(nextBooks);
     } catch (requestError) {
-      const nextMessage =
+      setError(
         requestError.response?.data?.message ||
-        'Data buku belum dapat dimuat. Silakan coba beberapa saat lagi.';
-
-      setError(nextMessage);
+          'Data buku belum dapat dimuat. Silakan coba beberapa saat lagi.'
+      );
     } finally {
       setLoading(false);
     }
@@ -56,6 +82,30 @@ function Books() {
   useEffect(() => {
     void loadBooks();
   }, []);
+
+  const filteredBooks = useMemo(
+    () => filterBooks(books, searchQuery),
+    [books, searchQuery]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedBooks = useMemo(() => {
+    const startIndex = (safePage - 1) * itemsPerPage;
+
+    return filteredBooks.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredBooks, itemsPerPage, safePage]);
 
   const resetFormFeedback = () => {
     setFormError('');
@@ -69,7 +119,6 @@ function Books() {
   };
 
   const openCreateForm = () => {
-    setSuccessMessage('');
     setError('');
     setEditingBook(null);
     setIsFormOpen(true);
@@ -77,7 +126,6 @@ function Books() {
   };
 
   const openEditForm = (book) => {
-    setSuccessMessage('');
     setError('');
     setEditingBook(book);
     setIsFormOpen(true);
@@ -100,15 +148,20 @@ function Books() {
       if (editingBook) {
         const response = await api.put(`/api/books/${getBookId(editingBook)}`, payload);
 
-        setSuccessMessage(response.data?.message || 'Data buku berhasil diperbarui.');
+        closeForm();
+        await loadBooks();
+        await showSuccessToast(
+          response.data?.message || 'Data buku berhasil diperbarui.'
+        );
       } else {
         const response = await api.post('/api/books', payload);
 
-        setSuccessMessage(response.data?.message || 'Data buku berhasil ditambahkan.');
+        closeForm();
+        await loadBooks();
+        await showSuccessToast(
+          response.data?.message || 'Data buku berhasil ditambahkan.'
+        );
       }
-
-      closeForm();
-      await loadBooks();
     } catch (requestError) {
       const nextFeedback = extractApiError(
         requestError,
@@ -125,158 +178,202 @@ function Books() {
   };
 
   const handleDelete = async (book) => {
-    const shouldDelete = window.confirm('Yakin ingin menghapus data buku ini?');
+    const shouldDelete = await confirmAction({
+      title: 'Apakah Anda yakin?',
+      text: 'Data yang dihapus tidak dapat dikembalikan.',
+      confirmButtonText: 'Ya, hapus',
+      confirmButtonClass: 'swal-button swal-button-danger',
+    });
 
     if (!shouldDelete) {
       return;
     }
 
-    setSuccessMessage('');
     setError('');
 
     try {
       const response = await api.delete(`/api/books/${getBookId(book)}`);
-
-      setSuccessMessage(response.data?.message || 'Data buku berhasil dihapus.');
 
       if (getBookId(editingBook) === getBookId(book)) {
         closeForm();
       }
 
       await loadBooks();
+      await showSuccessToast(response.data?.message || 'Data buku berhasil dihapus.');
     } catch (requestError) {
-      setError(
-        requestError.response?.data?.message || 'Data buku belum berhasil dihapus.'
-      );
+      const message =
+        requestError.response?.data?.message || 'Data buku belum berhasil dihapus.';
+
+      setError(message);
+      await showErrorDialog(message);
     }
   };
 
   return (
-    <section className="page-card books-page">
-      <div className="books-toolbar">
-        <div className="books-heading">
-          <p className="eyebrow">Modul Buku</p>
-          <h1>Data Buku</h1>
-          <p className="page-note">Kelola data koleksi buku perpustakaan.</p>
-        </div>
+    <div className="page-stack">
+      <PageHeader
+        kicker="Data Master"
+        title="Data Buku"
+        description="Kelola data koleksi buku perpustakaan."
+        action={
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={openCreateForm}
+          >
+            <FiPlus />
+            <span>Tambah Data</span>
+          </button>
+        }
+      />
 
-        <button type="button" className="button button-primary" onClick={openCreateForm}>
-          Tambah Buku
-        </button>
-      </div>
-
-      {successMessage ? <div className="alert alert-success">{successMessage}</div> : null}
       {error ? <div className="alert alert-error">{error}</div> : null}
 
-      {isFormOpen ? (
-        <section className="section-card">
-          <div className="section-heading">
-            <h2>{editingBook ? 'Edit Buku' : 'Tambah Buku'}</h2>
-            <p className="page-note">
-              {editingBook
-                ? 'Perbarui informasi buku yang dipilih.'
-                : 'Lengkapi informasi buku yang ingin ditambahkan.'}
-            </p>
+      <section className="panel-card">
+        <div className="panel-header">
+          <div>
+            <h2 className="panel-title">Daftar Buku</h2>
+            <p className="panel-description">Kelola data buku yang tersedia di perpustakaan.</p>
           </div>
-
-          <BookForm
-            mode={editingBook ? 'edit' : 'create'}
-            initialValues={editingBook || EMPTY_BOOK}
-            submitting={formSubmitting}
-            errorMessage={formError}
-            validationErrors={formErrors}
-            onCancel={closeForm}
-            onSubmit={handleCreateOrUpdate}
-          />
-        </section>
-      ) : null}
-
-      <section className="section-card">
-        <div className="section-heading">
-          <h2>Daftar Buku</h2>
-          <p className="page-note">Daftar koleksi buku perpustakaan.</p>
         </div>
 
-        {loading ? <p className="page-note">Memuat data buku...</p> : null}
+        <TableToolbar
+          perPage={itemsPerPage}
+          onPerPageChange={setItemsPerPage}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Cari judul, penulis, kategori, atau ISBN"
+        />
 
-        {!loading && books.length === 0 ? (
-          <p className="empty-state">Belum ada data buku.</p>
-        ) : null}
-
-        {!loading && books.length > 0 ? (
-          <div className="table-wrap" role="region" aria-label="Tabel data buku">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">No</th>
-                  <th scope="col">Judul</th>
-                  <th scope="col">Penulis</th>
-                  <th scope="col">Kategori</th>
-                  <th scope="col">ISBN</th>
-                  <th scope="col">Stok</th>
-                  <th scope="col">Tersedia</th>
-                  <th scope="col">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {books.map((book, index) => {
-                  const availableStock = Number(book.availableStock || 0);
-                  const totalStock = Number(book.stock || 0);
-
-                  return (
-                    <tr key={getBookId(book)}>
-                      <td>{index + 1}</td>
-                      <td>{book.title}</td>
-                      <td>{book.author}</td>
-                      <td>{book.category}</td>
-                      <td>{book.isbn}</td>
-                      <td>
-                        <span className="stock-badge stock-badge-neutral">{totalStock}</span>
-                      </td>
-                      <td>
-                        <span
-                          className={
-                            availableStock > 0
-                              ? 'stock-badge stock-badge-success'
-                              : 'stock-badge stock-badge-danger'
-                          }
-                        >
-                          {availableStock}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="button button-secondary button-small"
-                            aria-label={`Edit buku ${book.title}`}
-                            onClick={() => {
-                              openEditForm(book);
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="button button-danger button-small"
-                            aria-label={`Hapus buku ${book.title}`}
-                            onClick={() => {
-                              handleDelete(book);
-                            }}
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {loading ? (
+          <div className="table-state">
+            <div className="spinner" />
+            <p>Memuat data buku...</p>
           </div>
         ) : null}
+
+        {!loading && filteredBooks.length === 0 ? (
+          <div className="table-state empty">
+            <p>
+              {books.length === 0
+                ? 'Belum ada data buku.'
+                : 'Data buku yang dicari tidak ditemukan.'}
+            </p>
+          </div>
+        ) : null}
+
+        {!loading && filteredBooks.length > 0 ? (
+          <>
+            <div className="table-wrap" role="region" aria-label="Tabel data buku">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">Judul Buku</th>
+                    <th scope="col">Penulis</th>
+                    <th scope="col">Kategori</th>
+                    <th scope="col">ISBN</th>
+                    <th scope="col">Stok</th>
+                    <th scope="col">Tersedia</th>
+                    <th scope="col">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedBooks.map((book, index) => {
+                    const availableStock = Number(book.availableStock || 0);
+                    const totalStock = Number(book.stock || 0);
+
+                    return (
+                      <tr key={getBookId(book)}>
+                        <td>{(safePage - 1) * itemsPerPage + index + 1}</td>
+                        <td>
+                          <div className="table-primary-cell">
+                            <strong>{book.title}</strong>
+                            <small>{book.author}</small>
+                          </div>
+                        </td>
+                        <td>{book.author}</td>
+                        <td>{book.category}</td>
+                        <td>{book.isbn}</td>
+                        <td>
+                          <span className="stock-badge stock-badge-neutral">{totalStock}</span>
+                        </td>
+                        <td>
+                          <span
+                            className={
+                              availableStock > 0
+                                ? 'stock-badge stock-badge-success'
+                                : 'stock-badge stock-badge-danger'
+                            }
+                          >
+                            {availableStock}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            <button
+                              type="button"
+                              className="button button-success button-small"
+                              aria-label={`Edit buku ${book.title}`}
+                              onClick={() => {
+                                openEditForm(book);
+                              }}
+                            >
+                              <FiEdit2 />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="button button-danger button-small"
+                              aria-label={`Hapus buku ${book.title}`}
+                              onClick={() => {
+                                void handleDelete(book);
+                              }}
+                            >
+                              <FiTrash2 />
+                              <span>Hapus</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <TablePagination
+              totalItems={filteredBooks.length}
+              currentPage={safePage}
+              perPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
+          </>
+        ) : null}
       </section>
-    </section>
+
+      <AppModal
+        open={isFormOpen}
+        onClose={closeForm}
+        title={editingBook ? 'Edit Data Buku' : 'Tambah Data Buku'}
+        description={
+          editingBook
+            ? 'Perbarui informasi buku yang dipilih.'
+            : 'Lengkapi informasi buku yang ingin ditambahkan.'
+        }
+        size="lg"
+      >
+        <BookForm
+          mode={editingBook ? 'edit' : 'create'}
+          initialValues={editingBook || EMPTY_BOOK}
+          submitting={formSubmitting}
+          errorMessage={formError}
+          validationErrors={formErrors}
+          onCancel={closeForm}
+          onSubmit={handleCreateOrUpdate}
+        />
+      </AppModal>
+    </div>
   );
 }
 
