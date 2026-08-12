@@ -1,40 +1,55 @@
 import { NavLink } from 'react-router-dom';
 import {
-  FiBook,
   FiBookOpen,
   FiChevronLeft,
   FiChevronRight,
   FiGrid,
   FiLayers,
   FiRepeat,
+  FiShield,
   FiUsers,
   FiX,
 } from 'react-icons/fi';
+import lunasLogo from '../asset/lunas1.png';
+import lunasMark from '../assets/lunas-mark.png';
 
-const sections = [
-  {
-    title: null,
-    items: [{ to: '/dashboard', label: 'Dashboard', icon: FiGrid }],
-  },
-  {
-    title: 'Kelola Data',
-    groups: [
-      {
-        label: 'Data Master',
-        items: [
-          { to: '/books', label: 'Buku', icon: FiBookOpen },
-          { to: '/members', label: 'Anggota', icon: FiUsers },
-        ],
-      },
-      {
-        label: 'Data Transaksi',
-        items: [{ to: '/loans', label: 'Peminjaman', icon: FiRepeat }],
-      },
-    ],
-  },
-];
+function getSections(userRole) {
+  const sections = [
+    {
+      title: null,
+      items: [{ to: '/dashboard', label: 'Dashboard', icon: FiGrid }],
+    },
+    {
+      title: 'Kelola Data',
+      groups: [
+        {
+          label: 'Data Master',
+          items: [
+            { to: '/books', label: 'Buku', icon: FiBookOpen },
+            { to: '/members', label: 'Anggota', icon: FiUsers },
+          ],
+        },
+        {
+          label: 'Data Transaksi',
+          items: [{ to: '/loans', label: 'Peminjaman', icon: FiRepeat }],
+        },
+      ],
+    },
+  ];
 
-function AppSidebar({ isOpen, isCompact, onClose, onToggleCompact }) {
+  if (userRole === 'superuser') {
+    sections.push({
+      title: 'Manajemen',
+      items: [{ to: '/users', label: 'Pengguna', icon: FiShield }],
+    });
+  }
+
+  return sections;
+}
+
+function AppSidebar({ isOpen, isCompact, onClose, onToggleCompact, userRole }) {
+  const sections = getSections(userRole);
+
   return (
     <aside
       className={`app-sidebar ${isOpen ? 'is-open' : ''} ${isCompact ? 'is-compact' : ''}`}
@@ -42,13 +57,12 @@ function AppSidebar({ isOpen, isCompact, onClose, onToggleCompact }) {
     >
       <div className="sidebar-head">
         <NavLink to="/dashboard" className="sidebar-brand" onClick={onClose}>
-          <span className="sidebar-brand-icon">
-            <FiBook />
-          </span>
-          <span className="sidebar-brand-text">
-            <strong>LUNAS</strong>
-            <small>Digital Library</small>
-          </span>
+          <img src={lunasLogo} alt="Logo LUNAS" className="sidebar-logo sidebar-logo-full" />
+          <img
+            src={lunasMark}
+            alt="Logo LUNAS"
+            className="sidebar-logo sidebar-logo-compact"
+          />
         </NavLink>
 
         <button

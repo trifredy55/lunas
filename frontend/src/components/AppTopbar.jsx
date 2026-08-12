@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FiChevronDown, FiLogOut, FiMenu, FiUser } from 'react-icons/fi';
+import { FiChevronDown, FiLogOut, FiMenu, FiSettings, FiUser } from 'react-icons/fi';
 
 import { getInitials } from '../utils/formatters';
 
-function AppTopbar({ userName, onLogout, onToggleSidebar }) {
+function AppTopbar({ userName, onLogout, onOpenAccount, onToggleSidebar }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const initials = useMemo(() => getInitials(userName), [userName]);
@@ -72,6 +72,18 @@ function AppTopbar({ userName, onLogout, onToggleSidebar }) {
                   <small>Akun yang sedang digunakan</small>
                 </div>
               </div>
+
+              <button
+                type="button"
+                className="topbar-dropdown-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenAccount();
+                }}
+              >
+                <FiSettings />
+                <span>Pengaturan Akun</span>
+              </button>
 
               <button
                 type="button"

@@ -83,7 +83,9 @@ function Register() {
       await register(form.name, form.email, form.password);
       navigate('/login', {
         replace: true,
-        state: { message: 'Registrasi berhasil. Silakan login.' },
+        state: {
+          message: 'Registrasi berhasil. Akun Anda menunggu persetujuan Super User.',
+        },
       });
     } catch (error) {
       setErrorState(extractError(error));

@@ -21,6 +21,16 @@ const userSchema = new mongoose.Schema(
       required: true,
       select: false,
     },
+    role: {
+      type: String,
+      enum: ['superuser', 'user'],
+      default: 'user',
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'active', 'inactive'],
+      default: 'pending',
+    },
   },
   {
     timestamps: true,

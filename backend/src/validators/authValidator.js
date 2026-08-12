@@ -46,7 +46,41 @@ const loginValidator = [
     .withMessage('Password wajib diisi.'),
 ];
 
+const changePasswordValidator = [
+  body('currentPassword')
+    .isString()
+    .withMessage('Password saat ini wajib diisi.')
+    .bail()
+    .notEmpty()
+    .withMessage('Password saat ini wajib diisi.'),
+  body('newPassword')
+    .isString()
+    .withMessage('Password baru wajib diisi.')
+    .bail()
+    .isLength({ min: 8 })
+    .withMessage('Password baru minimal 8 karakter.')
+    .bail()
+    .matches(/[a-z]/)
+    .withMessage('Password baru harus memiliki huruf kecil.')
+    .bail()
+    .matches(/[A-Z]/)
+    .withMessage('Password baru harus memiliki huruf besar.')
+    .bail()
+    .matches(/[0-9]/)
+    .withMessage('Password baru harus memiliki angka.'),
+  body('confirmPassword')
+    .isString()
+    .withMessage('Konfirmasi password wajib diisi.')
+    .bail()
+    .notEmpty()
+    .withMessage('Konfirmasi password wajib diisi.')
+    .bail()
+    .custom((value, { req }) => value === req.body.newPassword)
+    .withMessage('Konfirmasi password tidak sama dengan password baru.'),
+];
+
 module.exports = {
   registerValidator,
   loginValidator,
+  changePasswordValidator,
 };

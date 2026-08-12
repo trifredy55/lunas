@@ -27,6 +27,7 @@ function AppLayout() {
       <AppSidebar
         isOpen={isSidebarOpen}
         isCompact={isSidebarCompact}
+        userRole={user?.role || 'user'}
         onClose={() => {
           setIsSidebarOpen(false);
         }}
@@ -48,6 +49,9 @@ function AppLayout() {
         <AppTopbar
           userName={user?.name || 'Pengguna'}
           onLogout={handleLogout}
+          onOpenAccount={() => {
+            navigate('/account');
+          }}
           onToggleSidebar={() => {
             setIsSidebarOpen((current) => !current);
           }}

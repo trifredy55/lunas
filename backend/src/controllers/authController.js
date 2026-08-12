@@ -4,6 +4,26 @@ const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
+function getUserRole(user) {
+  return user.role || 'user';
+}
+
+function getUserStatus(user) {
+  return user.status || 'active';
+}
+
+function getStatusMessage(status) {
+  if (status === 'pending') {
+    return 'Akun Anda masih menunggu persetujuan Super User.';
+  }
+
+  if (status === 'inactive') {
+    return 'Akun Anda sedang dinonaktifkan. Hubungi Super User.';
+  }
+
+  return 'Akun Anda tidak dapat mengakses sistem saat ini.';
+}
+
 function handleValidationErrors(req, res) {
   const errors = validationResult(req);
 
@@ -26,6 +46,8 @@ function publicUser(user) {
     id: user._id.toString(),
     name: user.name,
     email: user.email,
+    role: getUserRole(user),
+    status: getUserStatus(user),
     createdAt: user.createdAt,
   };
 }
@@ -56,11 +78,13 @@ async function register(req, res, next) {
       name,
       email,
       passwordHash,
+      role: 'user',
+      status: 'pending',
     });
 
     return res.status(201).json({
       success: true,
-      message: 'Registrasi berhasil.',
+      message: 'Registrasi berhasil. Akun Anda menunggu persetujuan Super User.',
       data: publicUser(newUser),
       token: generateToken(newUser),
     });
@@ -105,6 +129,15 @@ async function login(req, res, next) {
       });
     }
 
+    const userStatus = getUserStatus(user);
+
+    if (userStatus !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: getStatusMessage(userStatus),
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Login berhasil.',
@@ -123,8 +156,63 @@ function getMe(req, res) {
   });
 }
 
+async function changePassword(req, res, next) {
+  const validationResponse = handleValidationErrors(req, res);
+
+  if (validationResponse) {
+    return validationResponse;
+  }
+
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id).select('+passwordHash');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data pengguna tidak ditemukan.',
+      });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.passwordHash
+    );
+
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password saat ini tidak sesuai.',
+      });
+    }
+
+    const isSameAsCurrentPassword = await bcrypt.compare(
+      newPassword,
+      user.passwordHash
+    );
+
+    if (isSameAsCurrentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password baru harus berbeda dari password saat ini.',
+      });
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password berhasil diubah. Silakan login kembali.',
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
   getMe,
+  changePassword,
 };

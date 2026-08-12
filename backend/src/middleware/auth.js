@@ -2,6 +2,18 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/User');
 
+function getStatusMessage(status) {
+  if (status === 'pending') {
+    return 'Akun Anda masih menunggu persetujuan Super User.';
+  }
+
+  if (status === 'inactive') {
+    return 'Akun Anda sedang dinonaktifkan. Hubungi Super User.';
+  }
+
+  return 'Akun Anda tidak dapat mengakses sistem saat ini.';
+}
+
 async function protect(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -37,10 +49,22 @@ async function protect(req, res, next) {
       });
     }
 
+    const userStatus = user.status || 'active';
+    const userRole = user.role || 'user';
+
+    if (userStatus !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: getStatusMessage(userStatus),
+      });
+    }
+
     req.user = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
+      role: userRole,
+      status: userStatus,
       createdAt: user.createdAt,
     };
 

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { useAuth } from './context/AuthContext';
 import AppLayout from './layouts/AppLayout';
+import Account from './pages/Account';
 import Books from './pages/Books';
 import Dashboard from './pages/Dashboard';
 import Loans from './pages/Loans';
@@ -10,6 +11,8 @@ import Members from './pages/Members';
 import NotFound from './pages/NotFound';
 import Register from './pages/Register';
 import ProtectedRoute from './routes/ProtectedRoute';
+import SuperUserRoute from './routes/SuperUserRoute';
+import Users from './pages/Users';
 
 function LoadingScreen() {
   return (
@@ -70,9 +73,13 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/books" element={<Books />} />
           <Route path="/members" element={<Members />} />
           <Route path="/loans" element={<Loans />} />
+          <Route element={<SuperUserRoute />}>
+            <Route path="/users" element={<Users />} />
+          </Route>
         </Route>
       </Route>
 

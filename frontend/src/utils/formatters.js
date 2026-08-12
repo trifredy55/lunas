@@ -34,4 +34,26 @@ function normalizeText(value) {
   return String(value || '').toLowerCase().trim();
 }
 
-export { formatDateIndonesia, getInitials, normalizeText };
+function formatUserRole(role) {
+  return role === 'superuser' ? 'Super User' : 'Pengguna';
+}
+
+function formatUserStatus(status) {
+  if (status === 'active') {
+    return 'Aktif';
+  }
+
+  if (status === 'inactive') {
+    return 'Nonaktif';
+  }
+
+  return 'Menunggu Persetujuan';
+}
+
+export {
+  formatDateIndonesia,
+  formatUserRole,
+  formatUserStatus,
+  getInitials,
+  normalizeText,
+};

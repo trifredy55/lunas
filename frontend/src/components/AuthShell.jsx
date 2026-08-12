@@ -1,4 +1,5 @@
-import { FiBookOpen, FiShield, FiUsers } from 'react-icons/fi';
+import { FiShield, FiUsers } from 'react-icons/fi';
+import lunasLogoHorizontal from '../assets/lunas-logo-horizontal.png';
 
 function AuthShell({ title, subtitle, children, footer }) {
   return (
@@ -8,10 +9,6 @@ function AuthShell({ title, subtitle, children, footer }) {
           <div className="auth-visual-badge">LUNAS</div>
 
           <div className="auth-visual-hero">
-            <div className="auth-visual-icon">
-              <FiBookOpen />
-            </div>
-
             <div className="auth-visual-copy">
               <p className="auth-visual-kicker">LIBRARY UNSIA</p>
               <h2>NETWORKED APPLICATION SYSTEM</h2>
@@ -47,6 +44,9 @@ function AuthShell({ title, subtitle, children, footer }) {
 
         <section className="auth-form-panel">
           <div className="auth-panel-header">
+            <div className="auth-form-brand">
+              <img src={lunasLogoHorizontal} alt="Logo LUNAS" />
+            </div>
             <p className="page-kicker">Selamat Datang</p>
             <h1>{title}</h1>
             <p className="auth-panel-subtitle">{subtitle}</p>
