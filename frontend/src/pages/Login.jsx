@@ -14,6 +14,24 @@ function extractError(error) {
   return { message, details };
 }
 
+function getLoginValidationMessage(input) {
+  if (input.validity.valueMissing) {
+    if (input.name === 'email') {
+      return 'Email wajib diisi.';
+    }
+
+    if (input.name === 'password') {
+      return 'Password wajib diisi.';
+    }
+  }
+
+  if (input.name === 'email' && input.validity.typeMismatch) {
+    return 'Format email tidak valid.';
+  }
+
+  return '';
+}
+
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +56,16 @@ function Login() {
       ...current,
       [name]: value,
     }));
+  };
+
+  const handleInvalid = (event) => {
+    const input = event.currentTarget;
+
+    input.setCustomValidity(getLoginValidationMessage(input));
+  };
+
+  const clearCustomValidity = (event) => {
+    event.currentTarget.setCustomValidity('');
   };
 
   const handleSubmit = async (event) => {
@@ -89,6 +117,8 @@ function Login() {
               name="email"
               value={form.email}
               onChange={handleChange}
+              onInvalid={handleInvalid}
+              onInput={clearCustomValidity}
               placeholder="nama@unsia.ac.id"
               autoComplete="email"
               required
@@ -103,6 +133,8 @@ function Login() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
+                onInvalid={handleInvalid}
+                onInput={clearCustomValidity}
                 placeholder="Masukkan password"
                 autoComplete="current-password"
                 required

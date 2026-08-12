@@ -15,6 +15,28 @@ function extractError(error) {
   return { message, details };
 }
 
+function getRegisterValidationMessage(input) {
+  if (input.validity.valueMissing) {
+    if (input.name === 'name') {
+      return 'Nama wajib diisi.';
+    }
+
+    if (input.name === 'email') {
+      return 'Email wajib diisi.';
+    }
+
+    if (input.name === 'password') {
+      return 'Password wajib diisi.';
+    }
+  }
+
+  if (input.name === 'email' && input.validity.typeMismatch) {
+    return 'Format email tidak valid.';
+  }
+
+  return '';
+}
+
 function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -37,6 +59,16 @@ function Register() {
       ...current,
       [name]: value,
     }));
+  };
+
+  const handleInvalid = (event) => {
+    const input = event.currentTarget;
+
+    input.setCustomValidity(getRegisterValidationMessage(input));
+  };
+
+  const clearCustomValidity = (event) => {
+    event.currentTarget.setCustomValidity('');
   };
 
   const handleSubmit = async (event) => {
@@ -89,6 +121,8 @@ function Register() {
               name="name"
               value={form.name}
               onChange={handleChange}
+              onInvalid={handleInvalid}
+              onInput={clearCustomValidity}
               placeholder="Nama lengkap"
               autoComplete="name"
               required
@@ -102,6 +136,8 @@ function Register() {
               name="email"
               value={form.email}
               onChange={handleChange}
+              onInvalid={handleInvalid}
+              onInput={clearCustomValidity}
               placeholder="nama@unsia.ac.id"
               autoComplete="email"
               required
@@ -116,6 +152,8 @@ function Register() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
+                onInvalid={handleInvalid}
+                onInput={clearCustomValidity}
                 placeholder="Minimal 8 karakter"
                 autoComplete="new-password"
                 required

@@ -8,7 +8,7 @@ function Dashboard() {
       <p className="eyebrow">LUNAS</p>
       <h1>Library UNSIA Networked Application System</h1>
       <p className="lead">Selamat datang, {user?.name || 'Pengguna'}.</p>
-      <p className="page-note">Secure Digital Library Dashboard</p>
+      <p className="page-note">Ringkasan informasi perpustakaan.</p>
     </section>
   );
 }

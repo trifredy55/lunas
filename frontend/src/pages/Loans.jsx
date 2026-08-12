@@ -3,9 +3,7 @@ function Loans() {
     <section className="page-card">
       <p className="eyebrow">Modul Peminjaman</p>
       <h1>Data Peminjaman</h1>
-      <p className="page-note">
-        Halaman ini disiapkan sebagai placeholder integrasi transaksi peminjaman pada tahap frontend berikutnya.
-      </p>
+      <p className="page-note">Kelola transaksi peminjaman dan pengembalian buku.</p>
     </section>
   );
 }
